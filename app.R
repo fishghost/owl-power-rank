@@ -481,7 +481,7 @@ server <- function(input, output, session) {
         suppressMessages(sheet_append(RANK_DB_ID, 
                                       temp, 
                                       sheet = "Submissions"))
-        return(1)
+        1
       }, 
       error = function(e) {
         print(paste("Error on submission.", e))
@@ -494,6 +494,7 @@ server <- function(input, output, session) {
     ## Submission Report
     submitLog("submission", submission_time, submission_status)
     userSubmissionReport(submission_status)
+    shinyjs::enable(id = "button_submit_list")
   }
   
   userSubmissionReport <- function(submission_status) {
@@ -503,7 +504,6 @@ server <- function(input, output, session) {
       submission_status == 2 ~ "Submission Error. Try again later."
     )
     updateUserText(submission_message, delay_time = 5000)
-    shinyjs::enable(id = "button_submit_list")
   }
   
   #### Export ####
