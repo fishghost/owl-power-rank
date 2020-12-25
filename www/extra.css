@@ -1,0 +1,193 @@
+:root {
+--atl-bg: #C4C4C4;
+--bos-bg: #174B97;
+--cdh-bg: #FFA000;
+--dal-bg: #032340;
+--fla-bg: #000000;
+--gzc-bg: #122C42;
+--hzs-bg: #FB7299;
+--hou-bg: #000001;
+--lon-bg: #59CBE8;
+--lag-bg: #3C1053;
+--val-bg: #1888C6;
+--nxl-bg: #171C38;
+--par-bg: #303D56;
+--phi-bg: #F99E29;
+--sfs-bg: #A5ACAF;
+--seo-bg: #AA8A00;
+--shd-bg: #D22630;
+--tor-bg: #000005;
+--van-bg: #09226B;
+--was-bg: #990034;
+
+--atl-txt: #910F1B;
+--bos-txt: #EFDF00;
+--cdh-txt: #161823;
+--dal-txt: #0072CE;
+--fla-txt: #CF4691;
+--gzc-txt: #67A2B2;
+--hzs-txt: #FFFFFE;
+--hou-txt: #97D700;
+--lon-txt: #1C2B39;
+--lag-txt: #FFFFFF;
+--val-txt: #FFD100;
+--nxl-txt: #0F57EA;
+--par-txt: #8D042D;
+--phi-txt: #000002;
+--sfs-txt: #FC4C02;
+--seo-txt: #000004;
+--shd-txt: #000007;
+--tor-txt: #C10021;
+--van-txt: #2FB228;
+--was-txt: #FFFFF0;
+}
+
+/* OWL COLOURS FOR FUTURE UPDATE
+.btn-primary:hover {
+    color: #081418;
+    background-color: #f79014;
+    border-color: #e67b00;
+}
+
+.btn-primary {
+    color: #081418;
+    background-color: #f89c2d;
+    border-color: #ff8900;
+}
+
+*/
+
+/*Rank List*/
+
+div.default-sortable .rank-list-item {
+    color: #bbb;
+    background-color: white;
+    text-align:center; 
+    font-weight: bold;
+    border: 1px solid #ddd; 
+}
+
+.default-sortable .rank-list-item.sortable-selected, .default-sortable .rank-list-item.sortable-chosen, .default-sortable .rank-list-item.sortable-ghost.sortable-chosen, .default-sortable .rank-list-item.sortable-drag {
+    font-weight: lighter;
+    font-style: italic;
+}
+
+    div[data-rank-id="Atlanta Reign"].rank-list-item,
+div[data-rank-id="Atlanta Reign"].rank-list-item.sortable-selected {
+	color: var(--atl-txt);
+	background-color: var(--atl-bg);
+}
+
+div[data-rank-id="Boston Uprising"].rank-list-item,
+div[data-rank-id="Boston Uprising"].rank-list-item.sortable-selected {
+	color: var(--bos-txt);
+	background-color: var(--bos-bg);
+}
+
+div[data-rank-id="Chengdu Hunters"].rank-list-item,
+div[data-rank-id="Chengdu Hunters"].rank-list-item.sortable-selected {
+	color: var(--cdh-txt);
+	background-color: var(--cdh-bg);
+}
+
+div[data-rank-id="Dallas Fuel"].rank-list-item,
+div[data-rank-id="Dallas Fuel"].rank-list-item.sortable-selected {
+	color: var(--dal-txt);
+	background-color: var(--dal-bg);
+}
+
+div[data-rank-id="Florida Mayhem"].rank-list-item,
+div[data-rank-id="Florida Mayhem"].rank-list-item.sortable-selected {
+	color: var(--fla-txt);
+	background-color: var(--fla-bg);
+}
+
+div[data-rank-id="Guangzhou Charge"].rank-list-item,
+div[data-rank-id="Guangzhou Charge"].rank-list-item.sortable-selected {
+	color: var(--gzc-txt);
+	background-color: var(--gzc-bg);
+}
+
+div[data-rank-id="Hangzhou Spark"].rank-list-item,
+div[data-rank-id="Hangzhou Spark"].rank-list-item.sortable-selected {
+	color: var(--hzs-txt);
+	background-color: var(--hzs-bg);
+}
+
+div[data-rank-id="Houston Outlaws"].rank-list-item,
+div[data-rank-id="Houston Outlaws"].rank-list-item.sortable-selected {
+	color: var(--hou-txt);
+	background-color: var(--hou-bg);
+}
+
+div[data-rank-id="London Spitfire"].rank-list-item,
+div[data-rank-id="London Spitfire"].rank-list-item.sortable-selected {
+	color: var(--lon-txt);
+	background-color: var(--lon-bg);
+}
+
+div[data-rank-id="Los Angeles Gladiators"].rank-list-item,
+div[data-rank-id="Los Angeles Gladiators"].rank-list-item.sortable-selected {
+	color: var(--lag-txt);
+	background-color: var(--lag-bg);
+}
+
+div[data-rank-id="Los Angeles Valiant"].rank-list-item,
+div[data-rank-id="Los Angeles Valiant"].rank-list-item.sortable-selected {
+	color: var(--val-txt);
+	background-color: var(--val-bg);
+}
+
+div[data-rank-id="New York Excelsior"].rank-list-item,
+div[data-rank-id="New York Excelsior"].rank-list-item.sortable-selected {
+	color: var(--nxl-txt);
+	background-color: var(--nxl-bg);
+}
+
+div[data-rank-id="Paris Eternal"].rank-list-item,
+div[data-rank-id="Paris Eternal"].rank-list-item.sortable-selected {
+	color: var(--par-txt);
+	background-color: var(--par-bg);
+}
+
+div[data-rank-id="Philadelphia Fusion"].rank-list-item,
+div[data-rank-id="Philadelphia Fusion"].rank-list-item.sortable-selected {
+	color: var(--phi-txt);
+	background-color: var(--phi-bg);
+}
+
+div[data-rank-id="San Francisco Shock"].rank-list-item,
+div[data-rank-id="San Francisco Shock"].rank-list-item.sortable-selected {
+	color: var(--sfs-txt);
+	background-color: var(--sfs-bg);
+}
+
+div[data-rank-id="Seoul Dynasty"].rank-list-item,
+div[data-rank-id="Seoul Dynasty"].rank-list-item.sortable-selected {
+	color: var(--seo-txt);
+	background-color: var(--seo-bg);
+}
+
+div[data-rank-id="Shanghai Dragons"].rank-list-item,
+div[data-rank-id="Shanghai Dragons"].rank-list-item.sortable-selected {
+	color: var(--shd-txt);
+	background-color: var(--shd-bg);
+}
+
+div[data-rank-id="Toronto Defiant"].rank-list-item,
+div[data-rank-id="Toronto Defiant"].rank-list-item.sortable-selected {
+	color: var(--tor-txt);
+	background-color: var(--tor-bg);
+}
+
+div[data-rank-id="Vancouver Titans"].rank-list-item,
+div[data-rank-id="Vancouver Titans"].rank-list-item.sortable-selected {
+	color: var(--van-txt);
+	background-color: var(--van-bg);
+}
+
+div[data-rank-id="Washington Justice"].rank-list-item,
+div[data-rank-id="Washington Justice"].rank-list-item.sortable-selected {
+	color: var(--was-txt);
+	background-color: var(--was-bg);
+}
