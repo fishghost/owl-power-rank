@@ -217,12 +217,8 @@ server <- function(input, output, session) {
     
     if (!is.null(url_query[['rl']])) {
       url_rl <- url_query[['rl']]
-
-      # ## Trim all tier breaks if more than limit:
-      # urlt <- ifelse(str_count(url_rl, tail(export_letters,1)) <= tier_break_limit, 
-      #                  url_rl, 
-      #                  str_remove_all(url_rl, tail(export_letters,1)))
       
+      ## Check all known ways to mess up URL manually
       if (any(
         ## Any letters appear more than once or not at all
         !all(str_count(url_rl, export_letters[1:(length(export_letters)-1)]) == 1),
