@@ -132,7 +132,7 @@ ui_reset_list_button <- actionButton("button_reset_list", label = "Reset List", 
 ui_readme_modal <- actionButton("button_modal_readme", label = "About", icon = icon("info-circle"))
 ui_feedback_modal <- actionButton("button_modal_feedback", label = "Submit Feedback", icon = icon("comments"))
 
-ui_collapse_button <- actionButton("button_collapse", label = " Options and Info", icon = icon("toggle-off"), 
+ui_collapse_button <- actionButton("button_collapse", label = " Share  Options and Info", icon = icon("toggle-off"), 
                                    `data-toggle` = "collapse", `data-target` = "#collapsable_options",
                                    width = "100%")
 
@@ -172,7 +172,7 @@ ui <- fluidPage(
       fluidRow(ui_collapse_button), 
       tags$div(
         id = "collapsable_options", class = "collapse",
-        tags$h3("Export"), 
+        tags$h3("Share"), 
         ui_export_img_button, ui_clipboard_button, ui_export_link,
         tags$h3("Contact"), 
         ui_readme_modal, ui_feedback_modal
