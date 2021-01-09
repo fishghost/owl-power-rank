@@ -1,12 +1,15 @@
 ## OWL Power Rank Aggregator
 
 suppressPackageStartupMessages({
-  library(tidyverse)
+  library(dplyr)
+  library(readr)
+  library(tidyr)
   library(shiny)
   library(shinyjs)
   library(sortable)
   library(googlesheets4)
   library(rclipboard)
+  library(ggplot2)
   library(ggimage)
 })
 
