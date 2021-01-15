@@ -57,22 +57,135 @@
 
 */
 
+/*Bootstrap modal bug fix*/
+body:not(.modal-open){
+  padding-right: 0px !important;
+}
+
 /*Rank List*/
 
-div.default-sortable .rank-list-item {
+div.owl-teams .rank-list-item {
     color: #bbb;
     background-color: white;
     text-align:center; 
     font-weight: bold;
-    border: 1px solid #ddd; 
 }
 
-.default-sortable .rank-list-item.sortable-selected, .default-sortable .rank-list-item.sortable-chosen, .default-sortable .rank-list-item.sortable-ghost.sortable-chosen, .default-sortable .rank-list-item.sortable-drag {
+.owl-teams .rank-list-item:hover:not(.disabled) {
+  background-color: #ddeaf6;
+  cursor: grab;
+}
+
+.owl-teams .rank-list-item.sortable-ghost {
+  color: transparent;
+}
+
+.owl-teams .rank-list-item.sortable-ghost:hover:not(.disabled) {
+  cursor: grabbing;
+}
+.owl-teams .rank-list-item.sortable-selected:hover:not(.disabled), 
+.owl-teams .rank-list-item.sortable-chosen:hover:not(.disabled), 
+.owl-teams .rank-list-item.sortable-ghost.sortable-chosen:hover:not(.disabled), 
+.owl-teams .rank-list-item.sortable-drag:hover:not(.disabled) {
+  cursor: grabbing;
+}
+
+.owl-teams .rank-list-item.sortable-selected, 
+.owl-teams .rank-list-item.sortable-chosen, 
+.owl-teams .rank-list-item.sortable-ghost.sortable-chosen, 
+.owl-teams .rank-list-item.sortable-drag {
+    border: 3px solid;
     font-weight: lighter;
     font-style: italic;
 }
 
-    div[data-rank-id="Atlanta Reign"].rank-list-item,
+a[id^=roster_] {
+    float: right;
+    margin-right: 10px;
+    font-size: larger;
+}
+
+#roster_ATL {
+    color: var(--atl-txt);
+}
+
+#roster_BOS {
+    color: var(--bos-txt);
+}
+
+#roster_CDH {
+    color: var(--cdh-txt);
+}
+
+#roster_DAL {
+    color: var(--dal-txt);
+}
+
+#roster_FLA {
+    color: var(--fla-txt);
+}
+
+#roster_GZC {
+    color: var(--gzc-txt);
+}
+
+#roster_HZS {
+    color: var(--hzs-txt);
+}
+
+#roster_HOU {
+    color: var(--hou-txt);
+}
+
+#roster_LON {
+    color: var(--lon-txt);
+}
+
+#roster_LAG {
+    color: var(--lag-txt);
+}
+
+#roster_VAL {
+    color: var(--val-txt);
+}
+
+#roster_NXL {
+    color: var(--nxl-txt);
+}
+
+#roster_PAR {
+    color: var(--par-txt);
+}
+
+#roster_PHI {
+    color: var(--phi-txt);
+}
+
+#roster_SFS {
+    color: var(--sfs-txt);
+}
+
+#roster_SEO {
+    color: var(--seo-txt);
+}
+
+#roster_SHD {
+    color: var(--shd-txt);
+}
+
+#roster_TOR {
+    color: var(--tor-txt);
+}
+
+#roster_VAN {
+    color: var(--van-txt);
+}
+
+#roster_WAS {
+    color: var(--was-txt);
+}
+
+div[data-rank-id="Atlanta Reign"].rank-list-item,
 div[data-rank-id="Atlanta Reign"].rank-list-item.sortable-selected {
 	color: var(--atl-txt);
 	background-color: var(--atl-bg);

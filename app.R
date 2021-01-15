@@ -18,7 +18,7 @@ na.rm <- function(in_list) {
   in_list[!is.na(in_list)]
 }
 
-li_tag <- function(img_src, in_name) {
+li_tag <- function(img_src, in_name, in_abb) {
   if (is.na(in_name)) {
     tag_list <- tags$div(
       tags$img(src=file.path(list_logos_path, "TBR.png"), width = team_logo_width), 
@@ -28,7 +28,8 @@ li_tag <- function(img_src, in_name) {
   } else {
     tag_list <- tags$div(
       tags$img(src=img_src, width = team_logo_width),
-      in_name
+      in_name, 
+      actionLink(paste0("roster_", in_abb), label = "", icon = icon("users"))
     )
   }
   return(tag_list)
@@ -36,7 +37,7 @@ li_tag <- function(img_src, in_name) {
 
 list2rank <- function(in_list) {
   list_order <- match(in_list, team_colours$team)
-  team_labels <- mapply(li_tag, team_colours$list_logo[list_order], team_colours$team[list_order], SIMPLIFY = FALSE)
+  team_labels <- mapply(li_tag, team_colours$list_logo[list_order], team_colours$team[list_order], team_colours$abb[list_order], SIMPLIFY = FALSE)
   names(team_labels) <- replace_na(team_colours$team[list_order], tier_break_string)
   return(team_labels)
 }
@@ -69,6 +70,7 @@ check_pin <- function(in_name) {
 
 #### Sheets and Constants ####
 RANK_DB_ID <- read_file("www/.secrets/rank_db.txt")
+PLAYERS_ID <- read_file("www/.secrets/players.txt")
 TOKEN_ID <- read_file("www/.secrets/service_token.txt")
 
 options(gargle_oauth_cache = "www/.secrets")
@@ -95,6 +97,7 @@ finally = {
   tier_break_string <- extra_info$TierString[1]
   tier_break_limit <- extra_info$MaxTierLimit[1]
   team_logo_width <- extra_info$LogoWidth[1]
+  rows_per_team <- 4 ### ToDo change this
 })
 
 ## Constants
@@ -205,7 +208,9 @@ server <- function(input, output, session) {
   rV <- reactiveValues(retrieved_data = NULL, 
                        starting_list = teams, 
                        list_labels = NULL, 
-                       bypass_pin = FALSE)
+                       bypass_pin = FALSE, 
+                       prior_pressed = rep(0, length(teams)),
+                       retrieved_rosters = NULL)
   
   #### URL Param ####
   observe({
@@ -303,11 +308,79 @@ server <- function(input, output, session) {
       rank_list(
         input_id = "list_teams",
         text = "Drag teams into ranking; optionally dividing them by tiers",
-        labels = list2rank(rV$list_labels), 
-        options = sortable_options(multiDrag = TRUE)
+        labels = list2rank(rV$list_labels),  
+        ## Allow for multi-select and don't let item be dragged by roster link
+        options = sortable_options(multiDrag = TRUE, filter = "a"), 
+        class = c("default-sortable", "owl-teams") ## <- default format
+        # class = c("owl-teams") ## <- Slmn-type format
       )
     )
   })
+  
+  #### Roster ####
+  observeEvent(
+    ## Observe if any of the roster links are clicked (requires fandangling)
+    lapply(paste0("roster_", team_colours$abb), function(x) input[[x]]),
+    {
+      ## Get all roster buttons as vector in order from team_colours
+      rosters_pressed <- unlist(lapply(paste0("roster_", team_colours$abb), function(x) input[[x]][1]))
+      ## Buttons sequence upward, so find only the last button pressed
+      last_pressed <- rosters_pressed - rV$prior_pressed
+      
+      if (any(last_pressed == 1)) {
+        roster_for_team <- team_colours$team[[which(last_pressed==1)]]
+        
+        if(is.null(rV$retrieved_rosters)) {
+          showModal(
+            modalDialog(
+              title = paste(str_replace(roster_for_team, ".*\\s", ""), "Roster"),
+              tags$h4("performing one-time retrieval..."),
+              easyClose = TRUE,
+              size = "s"
+            )
+          )
+        }
+        
+        showModal(
+          modalDialog(
+            title = paste(str_replace(roster_for_team, ".*\\s", ""), "Roster"),
+            column(12, align = "center", renderRoster(roster_for_team)),
+            easyClose = TRUE,
+            size = "s"
+          )
+        )
+        
+        rV$prior_pressed <- rosters_pressed
+      }
+    }
+  )
+  
+  renderRoster <- function(roster_for_team) {
+    row_index <- which(team_colours$team == roster_for_team)*rows_per_team-(rows_per_team-1)
+    
+    ## If no roster info, go collect it
+    if(is.null(rV$retrieved_rosters)) {
+      try({
+        suppressMessages(rV$retrieved_rosters <- read_sheet(PLAYERS_ID, range = "FG_Rosters", 
+                                                            col_names = c("Damage", "Tank", "Support"), 
+                                                            col_types = "ccc"))
+      })
+    }
+    
+    ## If no roster collected, :(
+    if(is.null(rV$retrieved_rosters)) {
+      return(
+        tags$h4("Error obtaining rosters")
+      )
+    } else {
+      roster <- rV$retrieved_rosters[row_index:(row_index+rows_per_team-1),]
+      roster[is.na(roster)] <- "-"
+      
+      return(
+        renderTable(roster)
+      )
+    }
+  }
   
   #### Retrieve ####
   observeEvent(input$button_retrieve, {
@@ -480,7 +553,7 @@ server <- function(input, output, session) {
         suppressMessages(sheet_append(RANK_DB_ID, 
                                       temp, 
                                       sheet = "Submissions"))
-        1
+        1 ## Way to return this as successful
       }, 
       error = function(e) {
         print(paste("Error on submission.", e))
