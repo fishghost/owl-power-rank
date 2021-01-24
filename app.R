@@ -4,6 +4,7 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(readr)
   library(tidyr)
+  library(stringr)
   library(shiny)
   library(shinyjs)
   library(sortable)
@@ -344,7 +345,7 @@ server <- function(input, output, session) {
         showModal(
           modalDialog(
             title = paste(str_replace(roster_for_team, ".*\\s", ""), "Roster"),
-            column(12, align = "center", renderRoster(roster_for_team)),
+            fluidRow(column(12, align = "center", renderRoster(roster_for_team))),
             easyClose = TRUE,
             size = "s"
           )
@@ -373,7 +374,13 @@ server <- function(input, output, session) {
         tags$h4("Error obtaining rosters")
       )
     } else {
-      roster <- rV$retrieved_rosters[row_index:(row_index+rows_per_team-1),]
+      roster <- rV$retrieved_rosters[row_index:(row_index+rows_per_team-1),] %>%
+        pivot_longer(cols = 1:3) %>% 
+        arrange(value) %>%
+        group_by(name) %>%
+        mutate(rank = 1:n()) %>%
+        pivot_wider(id_cols = rank, names_sort = TRUE) %>% 
+        select(-rank)
       roster[is.na(roster)] <- "-"
       
       return(
