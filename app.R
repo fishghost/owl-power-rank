@@ -602,8 +602,7 @@ server <- function(input, output, session) {
         )
       )
     }
-    print(rV$starting_list)
-    print(new_list)
+
     ## Update list and reset list
     rV$starting_list <- list_split(new_list)
     
