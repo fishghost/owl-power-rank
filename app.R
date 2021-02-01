@@ -259,7 +259,7 @@ server <- function(input, output, session) {
                        retrieved_rosters = NULL)
   
   #### URL Param ####
-  observe({
+  observeEvent(session$clientData$url_search, {
     url_query <- parseQueryString(session$clientData$url_search)
     
     if (!is.null(url_query[['c']])) {
@@ -602,7 +602,8 @@ server <- function(input, output, session) {
         )
       )
     }
-    
+    print(rV$starting_list)
+    print(new_list)
     ## Update list and reset list
     rV$starting_list <- list_split(new_list)
     
