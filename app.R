@@ -4,9 +4,12 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(readr)
   library(tidyr)
+  library(stringr)
+  
   library(shiny)
   library(shinyjs)
   library(sortable)
+  
   library(googlesheets4)
   library(rclipboard)
   library(ggplot2)
@@ -42,12 +45,32 @@ list2rank <- function(in_list) {
   return(team_labels)
 }
 
+list_split <- function(in_list) {
+  ## Split list into regions
+  
+  ## Get tier break string from list
+  tbs <- in_list[!(in_list %in% teams)][1]
+  
+  ## East teams with tier breaks
+  index_east <- which(in_list %in% c(regional_teams$east, tbs))
+  
+  ## West teams with tier breaks
+  index_west <- which(in_list %in% c(regional_teams$west, tbs))
+  
+  return(
+    list(
+      east = trim_tb(in_list[index_east]),
+      west = trim_tb(in_list[index_west])
+    )
+  )
+}
+
 
 trim_tb <- function(in_list) {
   ## Trim tier breaks
-  first_last_index <- which(in_list %in% teams)[c(1,length(teams))]
+  team_indicies <- which(in_list %in% teams)
   return(
-    in_list[first_last_index[1]:first_last_index[2]]
+    in_list[team_indicies[1]:last(team_indicies)]
   )
 }
 
@@ -107,6 +130,10 @@ export_logos_path <- "www/TeamLogos/Export"
 team_colours <- team_colours %>%
   mutate(list_logo = paste(file.path(list_logos_path, abb),".png", sep = "")) %>%
   mutate(export_logo = paste(file.path(export_logos_path, abb),".png", sep = ""))
+regional_teams <- list(
+  east = team_colours$team[team_colours$region=="EAST"], 
+  west = team_colours$team[team_colours$region=="WEST"]
+  )
 
 export_letters <- c(LETTERS[1:length(teams)],0)
 host_url <- "https://fishghost.shinyapps.io/OWLPR"
@@ -131,8 +158,11 @@ ui_export_img_button <- actionButton("button_export_img", label = "as Image", ic
 ui_clipboard_button <- actionButton("button_clipboard", label = "as Text to Clipboard", icon = icon("clipboard"))
 ui_export_link <- actionButton("button_export_link", label = "as Link", icon = icon("link"))
 
-ui_add_tier_button <- actionButton("button_add_tier", label = " Tier Break", icon = icon("plus"))
-ui_del_tier_button <- actionButton("button_delete_tier", label = " Last Tier Break", icon = icon("minus"))
+ui_add_tier_button_e <- actionButton("button_add_tier_east", label = "", icon = icon("plus"))
+ui_del_tier_button_e <- actionButton("button_delete_tier_east", label = "", icon = icon("minus"))
+ui_add_tier_button_w <- actionButton("button_add_tier_west", label = "", icon = icon("plus"))
+ui_del_tier_button_w <- actionButton("button_delete_tier_west", label = "", icon = icon("minus"))
+
 ui_reset_list_button <- actionButton("button_reset_list", label = "Reset List", icon = icon("redo"))
 
 ui_readme_modal <- actionButton("button_modal_readme", label = "About", icon = icon("info-circle"))
@@ -143,7 +173,8 @@ ui_collapse_button <- actionButton("button_collapse", label = " Share  Options a
                                    width = "100%")
 
 ## Lists
-ui_team_list <- uiOutput("ui_team_list")
+ui_east_teams <- uiOutput("ui_east_teams")
+ui_west_teams <- uiOutput("ui_west_teams")
 
 ## UI Outputs 
 ui_user_text <- textOutput("user_text")
@@ -188,9 +219,23 @@ ui <- fluidPage(
       width = 7,
       fluidRow(style = "", 
                column(12, 
-                      fluidRow(style = "text-align: center;", 
-                               ui_add_tier_button, ui_del_tier_button, ui_reset_list_button),
-                      fluidRow(column(8, offset = 2, ui_team_list))))
+                      fluidRow(style = "text-align: center;", ui_reset_list_button), 
+                      fluidRow(column(6,  
+                        fluidRow(style = "text-align: center;", 
+                                 ui_add_tier_button_e, 
+                                 tags$text("Tier Break"),
+                                 ui_del_tier_button_e
+                        ),
+                        ui_east_teams
+                      ), column(6, 
+                        fluidRow(style = "text-align: center;", 
+                                 ui_add_tier_button_w, 
+                                 tags$text("Tier Break"), 
+                                 ui_del_tier_button_w
+                        ),
+                        ui_west_teams
+                      )))
+               )
     )
   )
 )
@@ -206,8 +251,9 @@ server <- function(input, output, session) {
   #### ToDo: #### 
   #### Memory ####
   rV <- reactiveValues(retrieved_data = NULL, 
-                       starting_list = teams, 
-                       list_labels = NULL, 
+                       starting_list = list_split(teams),
+                       east_labels = NULL, 
+                       west_labels = NULL,
                        bypass_pin = FALSE, 
                        prior_pressed = rep(0, length(teams)),
                        retrieved_rosters = NULL)
@@ -238,7 +284,9 @@ server <- function(input, output, session) {
         updateUserText("Badly formed link.", 5000)
       } else {
         ## Convert input parameter into new ordered list of teams
-        rV$starting_list <- paste(c(teams,tier_break_string)[match(str_split(url_rl, "")[[1]], export_letters)])
+        setList(
+          paste(c(teams,tier_break_string)[match(str_split(url_rl, "")[[1]], export_letters)])
+        )
       }
 
     }
@@ -249,7 +297,7 @@ server <- function(input, output, session) {
   #### Reset ####
   observeEvent(input$button_reset_list, {
     # Only show modal if list has changed: 
-    if (!identical(input$list_teams, rV$starting_list)) {
+    if (!identical(combineList(), combineList(rV$starting_list))) {
       showModal(
         modalDialog(
           "Do you want to reset your current rankings?", 
@@ -270,52 +318,128 @@ server <- function(input, output, session) {
   })
   
   resetList <- function() {
-    rV$list_labels <- NULL
-    rV$list_labels <- rV$starting_list
+    rV$east_labels <- rV$west_labels <- NULL
+    
+    rV$east_labels <- rV$starting_list$east
+    rV$west_labels <- rV$starting_list$west
   }
-
+  
   #### Tier Breaks ####
-  observeEvent(input$button_add_tier, {
-    ## Check the number of current tier breaks: 
-    if (sum(input$list_teams %in% tier_break_string) > tier_break_limit) {
+  observeEvent(input$button_add_tier_east, {
+    addTier("east")
+  })
+
+  observeEvent(input$button_add_tier_west, {
+    addTier("west")
+  })
+  
+  addTier <- function(region) {
+    ## Check the number of current tier breaks:
+    if (sum(combineList() %in% tier_break_string) >= tier_break_limit) {
       updateUserText("Too many tier breaks added", 2000)
       return()
     }
+    region_label <- regionId(region, "rV")
+    region_list <- regionId(region, "input")
     
-    new_list <- c(tier_break_string, input$list_teams)
-    rV$list_labels <- new_list
+    rV[[region_label]] <- c(tier_break_string, input[[region_list]])
+  }
+  
+  observeEvent(input$button_delete_tier_east, {
+    removeTier("east")
   })
   
-  observeEvent(input$button_delete_tier, {
-    ## If list is currently valid: 
-    if (length(input$list_teams) > 0) {
-      
-      ## Find index of last tier break
-      last_break_index <- tail(which(input$list_teams %in% tier_break_string), 1)
-      if (length(last_break_index) == 1) {
-        rV$list_labels <- input$list_teams[-last_break_index]
-      }
-    }
+  observeEvent(input$button_delete_tier_west, {
+    removeTier("west")
   })
+  
+  removeTier <- function(region) {
+      ## If list is currently valid:
+      if (length(combineList()) > 0) {
+        
+        region_label <- regionId(region, "rV")
+        region_list <- regionId(region, "input")
+        
+        ## Find index of last tier break
+        last_break_index <- tail(which(input[[region_list]] %in% tier_break_string), 1)
+        if (length(last_break_index) == 1) {
+          rV[[region_label]] <- input[[region_list]][-last_break_index]
+        }
+      }
+  }
   
   #### Rank List Creation/Update ####
-  output$ui_team_list <- renderUI({
-    ## Populate list first time with starting list
-    if (is.null(rV$list_labels)) {
-      rV$list_labels <- isolate(rV$starting_list)
+  output$ui_east_teams <- renderUI({
+    if (is.null(rV$east_labels)) {
+      rV$east_labels <- isolate(rV$starting_list$east)
     }
-    return (
+    
+    return(
+      regionalRankList("east")
+    )
+  })
+  
+  output$ui_west_teams <- renderUI({
+    if (is.null(rV$west_labels)) {
+      rV$west_labels <- isolate(rV$starting_list$west)
+    }
+    
+    return(
+      regionalRankList("west")
+    )
+  })
+  
+  regionalRankList <- function(region) {
+    region_labels <- regionId(region, "rV")
+    rank_id <- regionId(region, "input")
+    text <- paste0(toupper(substring(region, 1,1)), substring(region, 2), " Division")
+    
+    return(
       rank_list(
-        input_id = "list_teams",
-        text = "Drag teams into ranking; optionally dividing them by tiers",
-        labels = list2rank(rV$list_labels),  
+        input_id = rank_id,
+        text = text,
+        labels = list2rank(rV[[region_labels]]),
         ## Allow for multi-select and don't let item be dragged by roster link
-        options = sortable_options(multiDrag = TRUE, filter = "a"), 
+        options = sortable_options(multiDrag = TRUE, filter = "a"),
         class = c("default-sortable", "owl-teams") ## <- default format
         # class = c("owl-teams") ## <- Slmn-type format
       )
     )
-  })
+  }
+  
+  combineList <- function(in_split = NULL, region_names = FALSE) {
+    east_teams <- input$east_teams
+    west_teams <- input$west_teams
+    
+    if(!is.null(in_split)) {
+      east_teams <- in_split$east
+      west_teams <- in_split$west
+    }
+
+    combined_list <- c(
+      east_teams,
+      west_teams
+    )
+    
+    if (region_names) {
+      combined_list <- setNames(
+        combined_list, 
+        c(rep("EAST", length(east_teams)), rep("WEST", length(west_teams)))
+      )
+    }
+    
+    return(
+      combined_list
+    )
+  }
+  
+  regionId <- function(region, type = "input") {
+    suffix <- switch(type, input = "_teams", rV = "_labels")
+    
+    return(
+      paste0(region, suffix)
+    )
+  }
   
   #### Roster ####
   observeEvent(
@@ -388,12 +512,12 @@ server <- function(input, output, session) {
       updateUserText("Invalid user name to retrieve")
     } else {
       shinyjs::disable(id = "button_retrieve")
-      retrieve_submission()
+      retrieveSubmission()
       shinyjs::enable(id = "button_retrieve")
     }
   })
   
-  retrieve_submission <- function() {
+  retrieveSubmission <- function() {
     ## Pull data from DB if not yet:
     if(is.null(rV$retrieved_data)) {
       try({
@@ -436,11 +560,9 @@ server <- function(input, output, session) {
         last_list <- na.rm(last_list)
         last_list[!(last_list %in% teams)] <- tier_break_string
         
-        ## Assign to rank list: 
-        rV$list_labels <- last_list
-        ## Update list for Reset button: 
-        rV$starting_list <- last_list
-        
+        ## Assign to rank list and list for Reset button:
+        setList(last_list)
+
         ## User response:
         found_community <- community_list[str_detect(community_list, fixed(submitted_community, ignore_case = TRUE))]
         if(length(found_community == 1)) {
@@ -453,6 +575,34 @@ server <- function(input, output, session) {
                        7500)
       }
     }
+  }
+  
+  setList <- function(in_list) {
+    ## Convert from Legacy format that may have too many tier breaks
+    ##   split, trim, combine
+    new_list <- combineList(list_split(in_list))
+
+    ## Remove excessive tier breaks if necessary
+    if (sum(new_list %in% tier_break_string) > tier_break_limit) {
+      new_list <- new_list[!(new_list %in% tier_break_string)]
+
+      ## Let user know
+      showModal(
+        modalDialog(
+          tags$text("Tier breaks removed due to regional conversion. Sorry :("), 
+          tags$text("Please add new ones."), 
+          size = "s", 
+          easyClose = TRUE
+        )
+      )
+    }
+    
+    ## Update list and reset list
+    rV$starting_list <- list_split(new_list)
+    
+    # rV$east_label <- rV$west_label <- NULL
+    rV$east_labels <- rV$starting_list$east
+    rV$west_labels <- rV$starting_list$west
   }
   
   #### Submission ####
@@ -497,7 +647,7 @@ server <- function(input, output, session) {
             )
           )
         )
-      } else if (identical(input$list_teams, rV$starting_list)) {
+      } else if (identical(combineList(), combineList(rV$starting_list))) {
         
         showModal(
           modalDialog(
@@ -535,10 +685,7 @@ server <- function(input, output, session) {
     submission_status <- 0
     submission_time <- as.character(Sys.time())
     
-    # No longer necessary
-    ranked_list <- str_remove_all(input$list_teams, 
-                                  "\\s*\\^?--\\^?\\s*")
-    
+    ranked_list <- combineList()
     ## Assign data as single column...
     temp <- data.frame(col = c(input$user_name,
                                submission_time,
@@ -591,58 +738,68 @@ server <- function(input, output, session) {
     team_text_colour <- c(setNames(as.character(c(team_colours$text, "#888888")),
                                    c(team_colours$team, tier_break_string)))
     ## Twitter: 1200px X 675px and 16:9
-
-    dim.y <- round(25*length(input$list_teams))
-    dim.x <- 282
-    aspr <- dim.x/dim.y
+    
+    y.len <- max(sapply(list(input$east_teams, input$west_teams), 
+                        function(x) length(trim_tb(x))))
+    dim.y <- 400
+    dim.x <- 711
+    aspr <- dim.x/2/dim.y
     dl_dpi <- 72
-        
-    plot_data <- data.frame(team = trim_tb(input$list_teams)) %>%
+    y_per_team <- dim.y/y.len
+    logo_size <- 1/(dim.y/y_per_team)
+    
+    team_list <- combineList(region_names = TRUE)
+
+    plot_data <- data.frame(team = team_list, list_region = names(team_list)) %>%
       left_join(team_colours, by = "team") %>%
       mutate(rank = 1:n(), team = reorder(team, desc(rank))) %>%
       mutate(rank = reorder(as.character(rank), desc(rank))) %>%
       mutate(export_logo = ifelse(team == tier_break_string, file.path(export_logos_path,"TBR.png"), export_logo)) %>%
       ggplot(aes(y = rank)) +
       ## Teams
-      geom_bar(aes(x = ifelse(team %in% teams, 1, 0), fill = team), 
-               stat = "identity", 
-               width = 1, na.rm = TRUE) + 
-      geom_image(aes(image = ifelse(team %in% teams, export_logo, NA)), 
-                 x = 0.125, na.rm = TRUE, 
-                 size = 1/length(input$list_teams), by = "height",
+      geom_bar(aes(x = ifelse(team %in% teams, 1, 0), fill = team),
+               stat = "identity",
+               width = 1, na.rm = TRUE) +
+      geom_image(aes(image = ifelse(team %in% teams, export_logo, NA)),
+                 x = 0.125, na.rm = TRUE,
+                 size = 25/dim.y, by = "height",
                  asp = aspr) +
-      geom_text(aes(label = team, colour = team), 
-                size = 5, na.rm = TRUE, 
+      geom_text(aes(label = team, colour = team),
+                size = 5, na.rm = TRUE,
                 x = 0.5, fontface = "bold") +
       ## Tier Breaks
-      # geom_bar(aes(x = ifelse(team == tier_break_string, 1, 0)), 
-      #          stat = "identity", 
-      #          width = 0.2, na.rm = TRUE, fill = "black") + 
-      # 
+      # geom_bar(aes(x = ifelse(team == tier_break_string, 1, 0)),
+      #          stat = "identity",
+      #          width = 0.2, na.rm = TRUE, fill = "black") +
+      #
+      ## Facet
+      facet_wrap(vars(list_region), scales = "free", drop = F) + 
       ## Formatting
       scale_fill_manual(values = team_bg_colour) +
       scale_color_manual(values = team_text_colour) +
       theme_void() +
-      theme(legend.position = "none", panel.border = element_blank())
-    
-    ## Modal elemnts: 
-    preview_plot <- renderPlot(plot_data, width = dim.x, height = dim.y, 
+      theme(legend.position = "none", panel.border = element_blank(),
+            strip.background = element_blank(),
+            strip.text.x = element_blank())
+
+    ## Modal elemnts:
+    preview_plot <- renderPlot(plot_data, width = dim.x, height = dim.y,
                                bg = "transparent")
-    
+
     downloader <- downloadHandler(filename = "PowerRank.png",
                                   content = function(file) {
-                                    ggsave(file, plot = plot_data, device = "png", 
+                                    ggsave(file, plot = plot_data, device = "png",
                                            units = "in", dpi = dl_dpi,
                                            height = dim.y/dl_dpi, width = dim.x/dl_dpi)
                                   })
-    
+
     showModal(
       modalDialog(
-        preview_plot,
-        size = "s",
+        fluidRow(style = "text-align:center;", preview_plot),
+        size = "l",
         easyClose = TRUE,
         footer = tagList(
-          modalButton("Dismiss"), 
+          modalButton("Dismiss"),
           downloader
         )
       )
@@ -650,9 +807,15 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$button_clipboard, {
-    trimmed <- trim_tb(input$list_teams)
-    preview_height <- paste0(21*length(trimmed),"px")
-    to_clip <- paste(replace(trimmed, trimmed == tier_break_string, ""), collapse = "\n")
+    compiled <- c(
+      "[East Division]",
+      input$east_teams, 
+      "", 
+      "[West Division]", 
+      input$west_teams
+    )
+    preview_height <- paste0(21*length(compiled),"px")
+    to_clip <- paste(replace(compiled, compiled == tier_break_string, ""), collapse = "\n")
     clip_preview <- disabled(textAreaInput("preview_clip",
                                            "Preview:",
                                            value = to_clip,
@@ -691,7 +854,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$button_export_link, {
     ## Convert list into little letter string:
-    export_param <- paste(c(LETTERS[1:length(teams)],0)[match(input$list_teams, c(teams, tier_break_string))], collapse = "")
+    export_param <- paste(c(LETTERS[1:length(teams)],0)[match(combineList(), c(teams, tier_break_string))], collapse = "")
     url_param <- paste0(host_url, "?rl=", export_param)
     if (input$selected_community != community_list[1]) {
       url_param <- paste0(url_param, "&c=", input$selected_community)
