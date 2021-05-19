@@ -105,83 +105,83 @@ a[id^=roster_] {
     font-size: larger;
 }
 
-#roster_ATL {
+a[id$=ATL] {
     color: var(--atl-txt);
 }
 
-#roster_BOS {
+a[id$=BOS] {
     color: var(--bos-txt);
 }
 
-#roster_CDH {
+a[id$=CDH] {
     color: var(--cdh-txt);
 }
 
-#roster_DAL {
+a[id$=DAL] {
     color: var(--dal-txt);
 }
 
-#roster_FLA {
+a[id$=FLA] {
     color: var(--fla-txt);
 }
 
-#roster_GZC {
+a[id$=GZC] {
     color: var(--gzc-txt);
 }
 
-#roster_HZS {
+a[id$=HZS] {
     color: var(--hzs-txt);
 }
 
-#roster_HOU {
+a[id$=HOU] {
     color: var(--hou-txt);
 }
 
-#roster_LON {
+a[id$=LON] {
     color: var(--lon-txt);
 }
 
-#roster_LAG {
+a[id$=LAG] {
     color: var(--lag-txt);
 }
 
-#roster_VAL {
+a[id$=VAL] {
     color: var(--val-txt);
 }
 
-#roster_NXL {
+a[id$=NXL] {
     color: var(--nxl-txt);
 }
 
-#roster_PAR {
+a[id$=PAR] {
     color: var(--par-txt);
 }
 
-#roster_PHI {
+a[id$=PHI] {
     color: var(--phi-txt);
 }
 
-#roster_SFS {
+a[id$=SFS] {
     color: var(--sfs-txt);
 }
 
-#roster_SEO {
+a[id$=SEO] {
     color: var(--seo-txt);
 }
 
-#roster_SHD {
+a[id$=SHD] {
     color: var(--shd-txt);
 }
 
-#roster_TOR {
+a[id$=TOR] {
     color: var(--tor-txt);
 }
 
-#roster_VAN {
+a[id$=VAN] {
     color: var(--van-txt);
 }
 
-#roster_WAS {
+a[id$=WAS] {
     color: var(--was-txt);
 }
 

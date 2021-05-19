@@ -21,7 +21,7 @@ na.rm <- function(in_list) {
   in_list[!is.na(in_list)]
 }
 
-li_tag <- function(img_src, in_name, in_abb) {
+li_tag <- function(img_src, in_name, in_abb, in_suffix) {
   if (is.na(in_name)) {
     tag_list <- tags$div(
       tags$img(src=file.path(list_logos_path, "TBR.png"), width = team_logo_width), 
@@ -32,15 +32,20 @@ li_tag <- function(img_src, in_name, in_abb) {
     tag_list <- tags$div(
       tags$img(src=img_src, width = team_logo_width),
       in_name, 
-      actionLink(paste0("roster_", in_abb), label = "", icon = icon("users"))
+      actionLink(paste("roster", in_suffix, in_abb, sep = "_"), label = "", icon = icon("users"))
     )
   }
   return(tag_list)
 }
 
-list2rank <- function(in_list) {
+list2rank <- function(in_list, in_suffix) {
   list_order <- match(in_list, team_colours$team)
-  team_labels <- mapply(li_tag, team_colours$list_logo[list_order], team_colours$team[list_order], team_colours$abb[list_order], SIMPLIFY = FALSE)
+  team_labels <- mapply(li_tag, 
+                        team_colours$list_logo[list_order], 
+                        team_colours$team[list_order], 
+                        team_colours$abb[list_order], 
+                        in_suffix, 
+                        SIMPLIFY = FALSE)
   names(team_labels) <- replace_na(team_colours$team[list_order], tier_break_string)
   return(team_labels)
 }
@@ -60,11 +65,15 @@ list_split <- function(in_list) {
   return(
     list(
       east = trim_tb(in_list[index_east]),
-      west = trim_tb(in_list[index_west])
+      west = trim_tb(in_list[index_west]),
+      single = in_list
     )
   )
 }
 
+rm_tb <- function(in_list) {
+  return(in_list[!(in_list %in% tier_break_string)])
+}
 
 trim_tb <- function(in_list) {
   ## Trim tier breaks
@@ -72,6 +81,10 @@ trim_tb <- function(in_list) {
   return(
     in_list[team_indicies[1]:last(team_indicies)]
   )
+}
+
+count_tb <- function(in_list) {
+  return(sum(in_list %in% tier_break_string))
 }
 
 check_name <- function(in_name) {
@@ -89,6 +102,18 @@ check_pin <- function(in_name) {
   pattern <- "#\\d{4}\\d*$"
   has_pin <- str_detect(in_name, pattern)
   return(has_pin)
+}
+
+list_type <- function(in_num) {
+  return(
+    switch(
+      as.character(in_num), 
+      "1" = "single", 
+      "2" = "split", 
+      "single" = "1", 
+      "split" = "2"
+    )
+  )
 }
 
 #### Sheets and Constants ####
@@ -152,7 +177,7 @@ ui_feedback <- textAreaInput("feedback", label = "Enter feedback:", value = "", 
 test_button <- actionButton("button_test", label = "test")
 
 ui_retrieve_button <- actionButton("button_retrieve", label = "Retrieve Old Submission", icon = icon("cloud-download-alt"))
-ui_submit_button <- actionButton("button_submit_list", label = "Submit to Database", icon = icon("upload"), class = "btn-primary")
+ui_submit_button <- actionButton("button_submit_list", label = "Submit Regional Ranking", icon = icon("upload"), class = "btn-primary")
 
 ui_export_img_button <- actionButton("button_export_img", label = "as Image", icon = icon("file-image"))
 ui_clipboard_button <- actionButton("button_clipboard", label = "as Text to Clipboard", icon = icon("clipboard"))
@@ -162,8 +187,13 @@ ui_add_tier_button_e <- actionButton("button_add_tier_east", label = "", icon = 
 ui_del_tier_button_e <- actionButton("button_delete_tier_east", label = "", icon = icon("minus"))
 ui_add_tier_button_w <- actionButton("button_add_tier_west", label = "", icon = icon("plus"))
 ui_del_tier_button_w <- actionButton("button_delete_tier_west", label = "", icon = icon("minus"))
+ui_add_tier_button_s <- actionButton("button_add_tier_single", label = "", icon = icon("plus"))
+ui_del_tier_button_s <- actionButton("button_delete_tier_single", label = "", icon = icon("minus"))
+
 
 ui_reset_list_button <- actionButton("button_reset_list", label = "Reset List", icon = icon("redo"))
+ui_reset_list_button_s <- actionButton("button_reset_list_s", label = "Reset List", icon = icon("redo"))
+
 
 ui_readme_modal <- actionButton("button_modal_readme", label = "About", icon = icon("info-circle"))
 ui_feedback_modal <- actionButton("button_modal_feedback", label = "Submit Feedback", icon = icon("comments"))
@@ -175,12 +205,15 @@ ui_collapse_button <- actionButton("button_collapse", label = " Share  Options a
 ## Lists
 ui_east_teams <- uiOutput("ui_east_teams")
 ui_west_teams <- uiOutput("ui_west_teams")
+ui_single_teams <- uiOutput("ui_single_teams")
 
 ## UI Outputs 
 ui_user_text <- textOutput("user_text")
 ui_modal_text <- textOutput("modal_text")
 ui_readme <- tags$div(style="text-align:left;", 
                       includeMarkdown(file.path("www","readme.md")))
+ui_single_warning <- tags$div(style="text-align:left;", 
+                              includeMarkdown(file.path("www","single.md")))
 
 ## In Modals
 ui_reset_confirm <- actionButton("button_reset_confirm", 
@@ -217,25 +250,48 @@ ui <- fluidPage(
     ),
     mainPanel(
       width = 7,
-      fluidRow(style = "", 
-               column(12, 
-                      fluidRow(style = "text-align: center;", ui_reset_list_button), 
-                      fluidRow(column(6,  
-                        fluidRow(style = "text-align: center;", 
-                                 ui_add_tier_button_e, 
-                                 tags$text("Tier Break"),
-                                 ui_del_tier_button_e
-                        ),
-                        ui_east_teams
-                      ), column(6, 
-                        fluidRow(style = "text-align: center;", 
-                                 ui_add_tier_button_w, 
-                                 tags$text("Tier Break"), 
-                                 ui_del_tier_button_w
-                        ),
-                        ui_west_teams
-                      )))
-               )
+      tabsetPanel(
+        id = "list_type",
+        tabPanel(
+          "Regional",
+          value = "split",
+          fluidRow(style = "", 
+                   column(12, 
+                     fluidRow(style = "text-align: center; margin-top: 10px;", ui_reset_list_button), 
+                     fluidRow(column(6,  
+                                     fluidRow(style = "text-align: center;", 
+                                              ui_add_tier_button_e, 
+                                              tags$text("Tier Break"),
+                                              ui_del_tier_button_e
+                                     ),
+                                     ui_east_teams
+                     ), column(6, 
+                               fluidRow(style = "text-align: center;", 
+                                        ui_add_tier_button_w, 
+                                        tags$text("Tier Break"), 
+                                        ui_del_tier_button_w
+                               ),
+                               ui_west_teams
+                     ))
+                   )
+          )
+        ),
+        tabPanel(
+          "Combined (beta)", 
+          value = "single",
+          fluidRow(
+            column(
+              12, 
+              fluidRow(style = "text-align: center; margin-top: 10px;", 
+                       ui_add_tier_button_s, 
+                       tags$text("Tier Break"), 
+                       ui_del_tier_button_s, 
+                       ui_reset_list_button_s), 
+              fluidRow(column(8, offset = 2, ui_single_teams))
+            )
+          )
+        )
+      )
     )
   )
 )
@@ -254,8 +310,10 @@ server <- function(input, output, session) {
                        starting_list = list_split(teams),
                        east_labels = NULL, 
                        west_labels = NULL,
+                       single_labels = NULL,
                        bypass_pin = FALSE, 
-                       prior_pressed = rep(0, length(teams)),
+                       bypass_single_warning = FALSE, 
+                       prior_pressed = rep(0, length(teams)*2),
                        retrieved_rosters = NULL)
   
   #### URL Param ####
@@ -279,7 +337,7 @@ server <- function(input, output, session) {
         ## Any letters outside of set
         any(str_count(url_rl, setdiff(LETTERS, export_letters))),
         ## Excessive tier breaks
-        str_count(url_rl, tail(export_letters,1)) > tier_break_limit
+        str_count(url_rl, tail(export_letters,1)) >= tier_break_limit
       )) {
         updateUserText("Badly formed link.", 5000)
       } else {
@@ -291,13 +349,58 @@ server <- function(input, output, session) {
 
     }
     
+    if(!is.null(url_query[['lt']])) {
+      url_list <- url_query[['lt']]
+      
+      updateTabsetPanel(session, "list_type", list_type(url_list))
+    }
+    
   })
   
+  #### Tabs ####
+  observeEvent(input$list_type, {
+    if(input$list_type == "single") {
+      updateActionButton(session, "button_submit_list", 
+                         label = "Submit Combined Ranking")
+      if(!rV$bypass_single_warning) {
+        showModal(
+          modalDialog(
+            title = "Combined Ranking warning",
+            ui_single_warning, 
+            easyClose = TRUE, 
+            size = "s"
+          )
+        )
+        rV$bypass_single_warning <- TRUE
+      }
+    } else if (input$list_type == "split") {
+      updateActionButton(session, "button_submit_list", 
+                         label = "Submit Regional Ranking")
+    }
+       
+  })
   
   #### Reset ####
   observeEvent(input$button_reset_list, {
     # Only show modal if list has changed: 
     if (!identical(combineList(), combineList(rV$starting_list))) {
+      showModal(
+        modalDialog(
+          "Do you want to reset your current rankings?", 
+          easyClose = TRUE,
+          size = "s",
+          footer = tagList(
+            modalButton("No"), 
+            ui_reset_confirm
+          )
+        )
+      )
+    }
+  })
+  
+  observeEvent(input$button_reset_list_s, {
+    # Only show modal if list has changed: 
+    if (!identical(input$single_teams, rV$starting_list$single)) {
       showModal(
         modalDialog(
           "Do you want to reset your current rankings?", 
@@ -318,13 +421,15 @@ server <- function(input, output, session) {
   })
   
   resetList <- function() {
-    rV$east_labels <- rV$west_labels <- NULL
+    rV$east_labels <- rV$west_labels <- rV$single_labels <- NULL
     
     rV$east_labels <- rV$starting_list$east
     rV$west_labels <- rV$starting_list$west
+    rV$single_labels <- rV$starting_list$single
   }
   
   #### Tier Breaks ####
+  ## Add Tiers
   observeEvent(input$button_add_tier_east, {
     addTier("east")
   })
@@ -333,9 +438,14 @@ server <- function(input, output, session) {
     addTier("west")
   })
   
+  observeEvent(input$button_add_tier_single, {
+    addTier("single")
+  })
+
   addTier <- function(region) {
     ## Check the number of current tier breaks:
-    if (sum(combineList() %in% tier_break_string) >= tier_break_limit) {
+    if (sum(combineList() %in% tier_break_string) >= tier_break_limit |
+             sum(input$single_teams %in% tier_break_string) >= tier_break_limit) {
       updateUserText("Too many tier breaks added", 2000)
       return()
     }
@@ -345,6 +455,7 @@ server <- function(input, output, session) {
     rV[[region_label]] <- c(tier_break_string, input[[region_list]])
   }
   
+  ## Delete Tiers
   observeEvent(input$button_delete_tier_east, {
     removeTier("east")
   })
@@ -353,19 +464,23 @@ server <- function(input, output, session) {
     removeTier("west")
   })
   
+  observeEvent(input$button_delete_tier_single, {
+    removeTier("single")
+  })
+
   removeTier <- function(region) {
-      ## If list is currently valid:
-      if (length(combineList()) > 0) {
-        
-        region_label <- regionId(region, "rV")
-        region_list <- regionId(region, "input")
-        
-        ## Find index of last tier break
-        last_break_index <- tail(which(input[[region_list]] %in% tier_break_string), 1)
-        if (length(last_break_index) == 1) {
-          rV[[region_label]] <- input[[region_list]][-last_break_index]
-        }
+    ## If list is currently valid:
+    if ((input$list_type == "split" & length(combineList()) > 0) |
+        (input$list_type == "single" & length(input$single_teams > 0))) {
+      region_label <- regionId(region, "rV")
+      region_list <- regionId(region, "input")
+      
+      ## Find index of last tier break
+      last_break_index <- tail(which(input[[region_list]] %in% tier_break_string), 1)
+      if (length(last_break_index) == 1) {
+        rV[[region_label]] <- input[[region_list]][-last_break_index]
       }
+    }
   }
   
   #### Rank List Creation/Update ####
@@ -389,16 +504,42 @@ server <- function(input, output, session) {
     )
   })
   
+  output$ui_single_teams <- renderUI({
+    if (is.null(rV$single_labels)) {
+      rV$single_labels <- isolate(rV$starting_list$single)
+    }
+    
+    return(
+      regionalRankList("single")
+    )    
+  })
+  
+  observeEvent(input$single_teams,{
+    single_split <- list_split(input$single_teams)
+    
+    if (sum(combineList(single_split) %in% tier_break_string) >= tier_break_limit) {
+      single_split <- list_split(input$single_teams[!(input$single_teams %in% tier_break_string)])
+    }
+    
+    rV$east_labels <- single_split$east
+    rV$west_labels <- single_split$west
+  })
+  
   regionalRankList <- function(region) {
     region_labels <- regionId(region, "rV")
     rank_id <- regionId(region, "input")
+    suffix <- "r"
+    if(region == "single"){
+      region <- "combined"
+      suffix <- "s"
+    } 
     text <- paste0(toupper(substring(region, 1,1)), substring(region, 2), " Division")
     
     return(
       rank_list(
         input_id = rank_id,
         text = text,
-        labels = list2rank(rV[[region_labels]]),
+        labels = list2rank(rV[[region_labels]], in_suffix = suffix),
         ## Allow for multi-select and don't let item be dragged by roster link
         options = sortable_options(multiDrag = TRUE, filter = "a"),
         class = c("default-sortable", "owl-teams") ## <- default format
@@ -444,15 +585,21 @@ server <- function(input, output, session) {
   #### Roster ####
   observeEvent(
     ## Observe if any of the roster links are clicked (requires fandangling)
-    lapply(paste0("roster_", team_colours$abb), function(x) input[[x]]),
+    lapply(paste("roster", c("r", "s"), rep(team_colours$abb, each = 2), sep = "_"), 
+           function(x) input[[x]]),
     {
       ## Get all roster buttons as vector in order from team_colours
-      rosters_pressed <- unlist(lapply(paste0("roster_", team_colours$abb), function(x) input[[x]][1]))
+      rosters_pressed <- unlist(lapply(paste("roster", c("r", "s"), rep(team_colours$abb, each = 2), sep = "_"), 
+                                       function(x) input[[x]][1]))
+      ## Fix for when a tab's rosters isn't loaded yet
+      if((lendiff <- length(rV$prior_pressed) - length(rosters_pressed)) > 0) {
+        rosters_pressed <- c(rbind(rosters_pressed, rep(0, lendiff)))
+      }
       ## Buttons sequence upward, so find only the last button pressed
       last_pressed <- rosters_pressed - rV$prior_pressed
-      
+
       if (any(last_pressed == 1)) {
-        roster_for_team <- team_colours$team[[which(last_pressed==1)]]
+        roster_for_team <- team_colours$team[[ceiling(which(last_pressed==1)/2)]]
         
         if(is.null(rV$retrieved_rosters)) {
           showModal(
@@ -527,7 +674,7 @@ server <- function(input, output, session) {
     ## Pull data from DB if not yet:
     if(is.null(rV$retrieved_data)) {
       try({
-        submission_time <- Sys.time()
+        submission_time <- as.character(Sys.time())
         suppressMessages(rV$retrieved_data <- read_sheet(RANK_DB_ID, sheet = "Submissions")) # TryCatch
         
         ## Log that data was retrieved: 
@@ -553,10 +700,11 @@ server <- function(input, output, session) {
         ## Extract meta data: 
         submitted_date <- filtered_lists$time[last_submission_index]
         submitted_community <- filtered_lists$community[last_submission_index]
+        submitted_list_type <- filtered_lists$list_type[last_submission_index]
         
         ## Remove non-relavant elements and transpose:
         filtered_lists <- filtered_lists %>%
-          select(-c(user_name, time, community)) %>%
+          select(-c(user_name, time, community, list_type)) %>%
           t(.)
         
         ## Take the last column (/submission): 
@@ -567,9 +715,10 @@ server <- function(input, output, session) {
         last_list[!(last_list %in% teams)] <- tier_break_string
         
         ## Assign to rank list and list for Reset button:
-        setList(last_list)
+        setList(last_list, submitted_list_type)
 
         ## User response:
+        updateTabsetPanel(session, "list_type", selected = list_type(submitted_list_type))
         found_community <- community_list[str_detect(community_list, fixed(submitted_community, ignore_case = TRUE))]
         if(length(found_community == 1)) {
           updateSelectInput(session, "selected_community", 
@@ -583,32 +732,32 @@ server <- function(input, output, session) {
     }
   }
   
-  setList <- function(in_list) {
-    ## Convert from Legacy format that may have too many tier breaks
-    ##   split, trim, combine
-    new_list <- combineList(list_split(in_list))
-
+  setList <- function(in_list, in_list_type) {
+    split_list <- list_split(in_list)
+    
     ## Remove excessive tier breaks if necessary
-    if (sum(new_list %in% tier_break_string) > tier_break_limit) {
-      new_list <- new_list[!(new_list %in% tier_break_string)]
-
-      ## Let user know
-      showModal(
-        modalDialog(
-          tags$text("Tier breaks removed due to regional conversion. Sorry :("), 
-          tags$text("Please add new ones."), 
-          size = "s", 
-          easyClose = TRUE
-        )
-      )
+    if(count_tb(combineList(split_list)) >= tier_break_limit) {
+      # split_list <- lapply(split_list, rm_tb)
+      split_list$east <- rm_tb(split_list$east)
+      split_list$west <- rm_tb(split_list$west)
+      
+      # ## Let user know
+      # showModal(
+      #   modalDialog(
+      #     tags$text("Tier breaks removed due to regional conversion. Sorry :("), 
+      #     tags$text("Please add new ones."), 
+      #     size = "s"
+      #   )
+      # )    
     }
-
+    
     ## Update list and reset list
-    rV$starting_list <- list_split(new_list)
+    rV$starting_list <- split_list
     
     # rV$east_label <- rV$west_label <- NULL
     rV$east_labels <- rV$starting_list$east
     rV$west_labels <- rV$starting_list$west
+    rV$single_labels <- rV$starting_list$single    
   }
   
   #### Submission ####
@@ -653,7 +802,10 @@ server <- function(input, output, session) {
             )
           )
         )
-      } else if (identical(combineList(), combineList(rV$starting_list))) {
+      } else if ((identical(combineList(), combineList(rV$starting_list)) &
+                  input$list_type == "split") |
+                 (identical(input$single_teams, rV$starting_list$single) &
+                  input$list_type == "single")) {
         
         showModal(
           modalDialog(
@@ -691,17 +843,26 @@ server <- function(input, output, session) {
     submission_status <- 0
     submission_time <- as.character(Sys.time())
     
-    ranked_list <- combineList()
+    submission_list_type <- ""
+    if(input$list_type == "single") {
+      submission_list_type <- "1"
+      ranked_list <- input$single_teams
+    } else if (input$list_type == "split") {
+      submission_list_type <- "2"
+      ranked_list <- combineList()
+    }
+    
     ## Assign data as single column...
     temp <- data.frame(col = c(input$user_name,
                                submission_time,
                                input$selected_community, 
+                               submission_list_type, 
                                ranked_list))
     ## ... and transpose to single row
     temp <- as.data.frame(t(temp))
     
     ## Check if entry is valid: 
-    if(length(temp) > 3) {
+    if(length(temp) > 4) {
       submission_status <- tryCatch({
         suppressMessages(sheet_append(RANK_DB_ID, 
                                       temp, 
@@ -732,11 +893,7 @@ server <- function(input, output, session) {
   }
   
   #### Export ####
-  observeEvent(input$confirm_clipboard, {
-    removeModal()
-    updateUserText("Copied!", 5000)
-  })
-  
+  ## Image
   observeEvent(input$button_export_img, {
     ## Create plot: 
     team_bg_colour <- c(setNames(as.character(c(team_colours$background, "#DDDDDD")),
@@ -745,18 +902,32 @@ server <- function(input, output, session) {
                                    c(team_colours$team, tier_break_string)))
     ## Twitter: 1200px X 675px and 16:9
     
-    y.len <- max(sapply(list(input$east_teams, input$west_teams), 
-                        function(x) length(trim_tb(x))))
+    
     dim.y <- 400
     dim.x <- 711
     aspr <- dim.x/2/dim.y
-    dl_dpi <- 72
-    y_per_team <- dim.y/y.len
-    logo_size <- 1/(dim.y/y_per_team)
     
-    team_list <- combineList(region_names = TRUE)
+    if (input$list_type == "single") {
+      y.len <- length(trim_tb(input$single_teams))
+      dl_dpi <- 72
+      y_per_team <- dim.y/y.len
+      logo_size <- 1/(dim.y/y_per_team)
+      
+      team_list <- trim_tb(input$single_teams)
+      team_data <- data.frame(team = team_list) %>%
+        mutate(list_facet = ifelse(row_number() <= y.len/2, "Left", "Right"))
+    } else if (input$list_type == "split") {
+      y.len <- max(sapply(list(input$east_teams, input$west_teams), 
+                          function(x) length(trim_tb(x))))
+      dl_dpi <- 72
+      y_per_team <- dim.y/y.len
+      logo_size <- 1/(dim.y/y_per_team)
+      
+      team_list <- combineList(region_names = TRUE)
+      team_data <- data.frame(team = team_list, list_facet = names(team_list))
+    }
 
-    plot_data <- data.frame(team = team_list, list_region = names(team_list)) %>%
+    plot_data <- team_data %>%
       left_join(team_colours, by = "team") %>%
       mutate(rank = 1:n(), team = reorder(team, desc(rank))) %>%
       mutate(rank = reorder(as.character(rank), desc(rank))) %>%
@@ -779,16 +950,20 @@ server <- function(input, output, session) {
       #          width = 0.2, na.rm = TRUE, fill = "black") +
       #
       ## Facet
-      facet_wrap(vars(list_region), scales = "free", drop = F) + 
+      facet_wrap(vars(list_facet), scales = "free", drop = F) +
       ## Formatting
+      xlab("tinyurl.com/OWLRank") + 
       scale_fill_manual(values = team_bg_colour) +
       scale_color_manual(values = team_text_colour) +
       theme_void() +
       theme(legend.position = "none", panel.border = element_blank(),
             strip.background = element_blank(),
-            strip.text.x = element_blank())
+            strip.text.x = element_blank(), 
+            axis.title.x = element_text(family = "sans", face = "bold", 
+                                        colour = "#4A4C4E",
+                                        size = 15, margin = margin(b=5)))
 
-    ## Modal elemnts:
+    ## Modal elements:
     preview_plot <- renderPlot(plot_data, width = dim.x, height = dim.y,
                                bg = "transparent")
 
@@ -812,14 +987,20 @@ server <- function(input, output, session) {
     )
   })
   
+  ## Clipboard
   observeEvent(input$button_clipboard, {
-    compiled <- c(
-      "[East Division]",
-      input$east_teams, 
-      "", 
-      "[West Division]", 
-      input$west_teams
-    )
+    compiled <- c()
+    if (input$list_type == "single") {
+      compiled <- input$single_teams
+    } else if(input$list_type == "split") {
+      compiled <- c(
+        "[East Division]",
+        input$east_teams, 
+        "", 
+        "[West Division]", 
+        input$west_teams
+      )
+    }
     preview_height <- paste0(21*length(compiled),"px")
     to_clip <- paste(replace(compiled, compiled == tier_break_string, ""), collapse = "\n")
     clip_preview <- disabled(textAreaInput("preview_clip",
@@ -858,10 +1039,26 @@ server <- function(input, output, session) {
     
   })
   
+  observeEvent(input$confirm_clipboard, {
+    removeModal()
+    updateUserText("Copied!", 5000)
+  })
+
+  ## Link
   observeEvent(input$button_export_link, {
+    team_list <- c()
+    list_type <- ""
+    if (input$list_type == "single") {
+      team_list <- input$single_teams
+      list_type <- list_type(input$list_type)
+    } else if (input$list_type == "split") {
+      team_list <- combineList()
+      list_type <- list_type(input$list_type)
+    }
+    
     ## Convert list into little letter string:
-    export_param <- paste(c(LETTERS[1:length(teams)],0)[match(combineList(), c(teams, tier_break_string))], collapse = "")
-    url_param <- paste0(host_url, "?rl=", export_param)
+    export_param <- paste(c(LETTERS[1:length(teams)],0)[match(team_list, c(teams, tier_break_string))], collapse = "")
+    url_param <- paste0(host_url, "?rl=", export_param, "&lt=", list_type)
     if (input$selected_community != community_list[1]) {
       url_param <- paste0(url_param, "&c=", input$selected_community)
     }

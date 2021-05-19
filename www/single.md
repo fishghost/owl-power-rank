@@ -1,0 +1,1 @@
+Making changes to the combined ranking will change the regional ranking. When submitting, ***either*** the combined ranking ***or*** regionally separated ranking will be submitted. Not both. 
