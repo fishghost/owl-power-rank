@@ -22,6 +22,11 @@ na.rm <- function(in_list) {
 }
 
 li_tag <- function(img_src, in_name, in_abb, in_suffix) {
+  score <- team_standings %>%
+    filter(team == in_name) %>% 
+    select(points, loses) %>% 
+    paste(collapse = "-")
+  
   if (is.na(in_name)) {
     tag_list <- tags$div(
       tags$img(src=file.path(list_logos_path, "TBR.png"), width = team_logo_width), 
@@ -31,7 +36,7 @@ li_tag <- function(img_src, in_name, in_abb, in_suffix) {
   } else {
     tag_list <- tags$div(
       tags$img(src=img_src, width = team_logo_width),
-      in_name, 
+      paste0(in_name, " (", score, ")"), 
       actionLink(paste("roster", in_suffix, in_abb, sep = "_"), label = "", icon = icon("users"))
     )
   }
@@ -118,11 +123,16 @@ list_type <- function(in_num) {
 
 #### Sheets and Constants ####
 RANK_DB_ID <- read_file("www/.secrets/rank_db.txt")
+# RANK_DB_ID <- read_file("www/.secrets/test_db.txt")
 PLAYERS_ID <- read_file("www/.secrets/players.txt")
 TOKEN_ID <- read_file("www/.secrets/service_token.txt")
 
 options(gargle_oauth_cache = "www/.secrets")
 gs4_auth(path = file.path("www/.secrets", TOKEN_ID))
+
+## Backup:
+extra_info <- readRDS("www/backup/extra_info.rds")
+sheet_info <- readRDS("www/backup/sheet_info.rds")
 
 ## Read Data from google sheet (or backup if unavailable)
 tryCatch({
@@ -134,13 +144,14 @@ tryCatch({
   sheet_info <- gs4_get(RANK_DB_ID)
 }, 
 error = function(e) {
-  extra_info <- readRDS("www/backup/extra_info.rds")
-  sheet_info <- readRDS("www/backup/sheet_info.rds")
   print(paste("Error on load.", e))
 }, 
 finally = {
   ## Pulled Info
   teams <- na.rm(extra_info$Teams)
+  league_points <- na.rm(extra_info$LeaguePoints) 
+  team_loses <- na.rm(extra_info$Loses) 
+  map_diff <- na.rm(extra_info$MapDiff) 
   community_list <- na.rm(extra_info$Communities)
   tier_break_string <- extra_info$TierString[1]
   tier_break_limit <- extra_info$MaxTierLimit[1]
@@ -155,6 +166,15 @@ export_logos_path <- "www/TeamLogos/Export"
 team_colours <- team_colours %>%
   mutate(list_logo = paste(file.path(list_logos_path, abb),".png", sep = "")) %>%
   mutate(export_logo = paste(file.path(export_logos_path, abb),".png", sep = ""))
+
+team_standings <- data.frame(
+  team = teams, 
+  points = league_points, 
+  loses = team_loses, 
+  diff = map_diff
+) %>%
+  arrange(desc(league_points), team_loses, desc(map_diff))
+
 regional_teams <- list(
   east = team_colours$team[team_colours$region=="EAST"], 
   west = team_colours$team[team_colours$region=="WEST"]
@@ -307,7 +327,7 @@ server <- function(input, output, session) {
   #### ToDo: #### 
   #### Memory ####
   rV <- reactiveValues(retrieved_data = NULL, 
-                       starting_list = list_split(teams),
+                       starting_list = list_split(team_standings$team),
                        east_labels = NULL, 
                        west_labels = NULL,
                        single_labels = NULL,
@@ -627,14 +647,14 @@ server <- function(input, output, session) {
   )
   
   renderRoster <- function(roster_for_team) {
-    row_index <- which(team_colours$team == roster_for_team)*rows_per_team-(rows_per_team-1)
-    
     ## If no roster info, go collect it
     if(is.null(rV$retrieved_rosters)) {
       try({
-        suppressMessages(rV$retrieved_rosters <- read_sheet(PLAYERS_ID, range = "FG_Rosters", 
-                                                            col_names = c("Damage", "Tank", "Support"), 
-                                                            col_types = "ccc"))
+        suppressMessages(
+          rV$retrieved_rosters <- read_sheet(PLAYERS_ID, 
+                                             range = "ListRosters") %>%
+            setNames(c("team", "player", "role"))
+        )
       })
     }
     
@@ -644,13 +664,13 @@ server <- function(input, output, session) {
         tags$h4("Error obtaining rosters")
       )
     } else {
-      roster <- rV$retrieved_rosters[row_index:(row_index+rows_per_team-1),] %>%
-        pivot_longer(cols = 1:3) %>% 
-        arrange(value) %>%
-        group_by(name) %>%
-        mutate(rank = 1:n()) %>%
-        pivot_wider(id_cols = rank, names_sort = TRUE) %>% 
-        select(-rank)
+      roster <- rV$retrieved_rosters %>%
+        filter(team == roster_for_team) %>% 
+        arrange(player) %>%
+        group_by(role) %>% 
+        mutate(rank = 1:n()) %>% 
+        pivot_wider(id_cols = rank, names_from = role, values_from = player) %>%
+        select(Tank, Damage, Support)
       roster[is.na(roster)] <- "-"
       
       return(
