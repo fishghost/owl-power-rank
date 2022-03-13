@@ -36,8 +36,8 @@ li_tag <- function(img_src, in_name, in_abb, in_suffix) {
   } else {
     tag_list <- tags$div(
       tags$img(src=img_src, width = team_logo_width),
-      paste0(in_name, " (", score, ")"), 
-      actionLink(paste("roster", in_suffix, in_abb, sep = "_"), label = "", icon = icon("users"))
+      paste0(in_name, " (", score, ")")#, # Commented out now while rosters are being populated in spreadsheet
+      #actionLink(paste("roster", in_suffix, in_abb, sep = "_"), label = "", icon = icon("users"))
     )
   }
   return(tag_list)
@@ -272,6 +272,7 @@ ui <- fluidPage(
       width = 7,
       tabsetPanel(
         id = "list_type",
+        type = "hidden", 
         tabPanel(
           "Regional",
           value = "split",
@@ -295,22 +296,22 @@ ui <- fluidPage(
                      ))
                    )
           )
-        ),
-        tabPanel(
-          "Combined (beta)", 
-          value = "single",
-          fluidRow(
-            column(
-              12, 
-              fluidRow(style = "text-align: center; margin-top: 10px;", 
-                       ui_add_tier_button_s, 
-                       tags$text("Tier Break"), 
-                       ui_del_tier_button_s, 
-                       ui_reset_list_button_s), 
-              fluidRow(column(8, offset = 2, ui_single_teams))
-            )
-          )
-        )
+        )#,
+        # tabPanel(
+        #   "Combined (beta)", 
+        #   value = "single",
+        #   fluidRow(
+        #     column(
+        #       12, 
+        #       fluidRow(style = "text-align: center; margin-top: 10px;", 
+        #                ui_add_tier_button_s, 
+        #                tags$text("Tier Break"), 
+        #                ui_del_tier_button_s, 
+        #                ui_reset_list_button_s), 
+        #       fluidRow(column(8, offset = 2, ui_single_teams))
+        #     )
+        #   )
+        # )
       )
     )
   )
@@ -369,11 +370,12 @@ server <- function(input, output, session) {
 
     }
     
-    if(!is.null(url_query[['lt']])) {
-      url_list <- url_query[['lt']]
-      
-      updateTabsetPanel(session, "list_type", list_type(url_list))
-    }
+    # Commented out for list type tabs
+    # if(!is.null(url_query[['lt']])) {
+    #   url_list <- url_query[['lt']]
+    #   
+    #   updateTabsetPanel(session, "list_type", list_type(url_list))
+    # }
     
   })
   
