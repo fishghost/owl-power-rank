@@ -181,7 +181,8 @@ regional_teams <- list(
   )
 
 export_letters <- c(LETTERS[1:length(teams)],0)
-host_url <- "https://fishghost.shinyapps.io/OWLPR"
+#host_url <- "https://fishghost.shinyapps.io/OWLPR"
+host_url <- "https://fishg.host/shiny/ranker/"
 
 ## Data Wranlging
 ##   None right now
@@ -974,7 +975,7 @@ server <- function(input, output, session) {
       ## Facet
       facet_wrap(vars(list_facet), scales = "free", drop = F) +
       ## Formatting
-      xlab("tinyurl.com/OWLRank") + 
+      xlab("https://fishg.host/shiny/ranker") + 
       scale_fill_manual(values = team_bg_colour) +
       scale_color_manual(values = team_text_colour) +
       theme_void() +
