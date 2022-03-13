@@ -1046,7 +1046,10 @@ server <- function(input, output, session) {
   })
   
   output$ui_clipboard_confirm <- renderUI({
-    ui_clip_button <- rclipButton("confirm_clipboard", "Not working", "", icon("clipboard"))
+    ui_clip_button <- rclipButton("confirm_clipboard", 
+                                  label = "Not working", 
+                                  clipText = "", 
+                                  icon = icon("clipboard"))
     
     if(is.character(input$preview_clip)) {
       ui_clip_button <- rclipButton("confirm_clipboard",
@@ -1105,7 +1108,10 @@ server <- function(input, output, session) {
   })
   
   output$ui_link_confirm <- renderUI({
-    ui_clip_button <- rclipButton("confirm_clipboard", "Not working", "", icon("clipboard"))
+    ui_clip_button <- rclipButton("confirm_clipboard", 
+                                  label = "Not working", 
+                                  clipText = "", 
+                                  icon = icon("clipboard"))
     
     if(is.character(input$preview_link)) {
       ui_clip_button <- rclipButton("confirm_clipboard",
