@@ -36,8 +36,8 @@ li_tag <- function(img_src, in_name, in_abb, in_suffix) {
   } else {
     tag_list <- tags$div(
       tags$img(src=img_src, width = team_logo_width),
-      paste0(in_name, " (", score, ")")#, # Commented out now while rosters are being populated in spreadsheet
-      #actionLink(paste("roster", in_suffix, in_abb, sep = "_"), label = "", icon = icon("users"))
+      paste0(in_name, " (", score, ")"),  # Commented out now while rosters are being populated in spreadsheet
+      actionLink(paste("roster", in_suffix, in_abb, sep = "_"), label = "", icon = icon("users"))
     )
   }
   return(tag_list)
@@ -656,7 +656,8 @@ server <- function(input, output, session) {
         suppressMessages(
           rV$retrieved_rosters <- read_sheet(PLAYERS_ID, 
                                              range = "ListRosters") %>%
-            setNames(c("team", "player", "role"))
+            setNames(c("team", "player", "role")) %>%
+            mutate(player = as.character(player))
         )
       })
     }
@@ -673,7 +674,8 @@ server <- function(input, output, session) {
         group_by(role) %>% 
         mutate(rank = 1:n()) %>% 
         pivot_wider(id_cols = rank, names_from = role, values_from = player) %>%
-        select(Tank, Damage, Support)
+        # Added 'matches' in case a team doesn't have a player announced in that role
+        select(matches("Tank"), matches("Damage"), matches("Support"))
       roster[is.na(roster)] <- "-"
       
       return(
