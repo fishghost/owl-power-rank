@@ -655,8 +655,9 @@ server <- function(input, output, session) {
       try({
         suppressMessages(
           rV$retrieved_rosters <- read_sheet(PLAYERS_ID, 
-                                             range = "ListRosters") %>%
-            setNames(c("team", "player", "role")) %>%
+                                             range = "FG_PlayerData") %>%
+            select(1, 12, 27) %>%
+            setNames(c("player", "role", "team")) %>%
             mutate(player = as.character(player))
         )
       })
@@ -669,7 +670,12 @@ server <- function(input, output, session) {
       )
     } else {
       roster <- rV$retrieved_rosters %>%
-        filter(team == roster_for_team) %>% 
+        filter(team == roster_for_team) 
+      
+      if(nrow(roster) == 0) {
+        return(renderText("No known roster"))
+      } 
+      roster <- roster %>%
         arrange(player) %>%
         group_by(role) %>% 
         mutate(rank = 1:n()) %>% 

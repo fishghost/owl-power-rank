@@ -1,45 +1,45 @@
 :root {
---atl-bg: #C4C4C4;
---bos-bg: #174B97;
---cdh-bg: #FFA000;
---dal-bg: #032340;
---fla-bg: #000000;
---gzc-bg: #122C42;
---hzs-bg: #FB7299;
---hou-bg: #000001;
---lon-bg: #59CBE8;
---lag-bg: #3C1053;
---val-bg: #1888C6;
---nxl-bg: #171C38;
---par-bg: #303D56;
---phi-bg: #F99E29;
---sfs-bg: #A5ACAF;
---seo-bg: #AA8A00;
---shd-bg: #D22630;
---tor-bg: #000005;
---van-bg: #09226B;
---was-bg: #990034;
+--atl-bg: #C4C4C4; 
+--bos-bg: #18509F; 
+--cdh-bg: #FFA000; 
+--dal-bg: #0C2340; 
+--dyn-bg: #AA8A00; 
+--fla-bg: #000000; 
+--gla-bg: #60269E; 
+--gzc-bg: #122C42; 
+--hou-bg: #000000; 
+--hzs-bg: #FB7299; 
+--inf-bg: #E2012D; 
+--ldn-bg: #59CBE8; 
+--lve-bg: #000000; 
+--nye-bg: #171C38; 
+--sfs-bg: #A5ACAF; 
+--shd-bg: #D22630; 
+--tor-bg: #000000; 
+--val-bg: #1888C6; 
+--van-bg: #09226B; 
+--was-bg: #990034; 
 
 --atl-txt: #910F1B;
---bos-txt: #EFDF00;
+--bos-txt: #FFF001;
 --cdh-txt: #161823;
 --dal-txt: #0072CE;
+--dyn-txt: #000000;
 --fla-txt: #CF4691;
+--gla-txt: #F849FE;
 --gzc-txt: #67A2B2;
---hzs-txt: #FFFFFE;
 --hou-txt: #97D700;
---lon-txt: #1C2B39;
---lag-txt: #FFFFFF;
---val-txt: #FFD100;
---nxl-txt: #0F57EA;
---par-txt: #8D042D;
---phi-txt: #000002;
+--hzs-txt: #FFFFFE;
+--inf-txt: #000000;
+--ldn-txt: #1C2B39;
+--lve-txt: #9C182F;
+--nye-txt: #0F57EA;
 --sfs-txt: #FC4C02;
---seo-txt: #000004;
---shd-txt: #000007;
+--shd-txt: #000000;
 --tor-txt: #C10021;
+--val-txt: #FFD100;
 --van-txt: #2FB228;
---was-txt: #FFFFF0;
+--was-txt: #003768;
 }
 
 /* OWL COLOURS FOR FUTURE UPDATE
@@ -125,6 +125,10 @@ a[id$=FLA] {
     color: var(--fla-txt);
 }
 
+a[id$=GLA] {
+    color: var(--gla-txt);
+}
+
 a[id$=GZC] {
     color: var(--gzc-txt);
 }
@@ -137,36 +141,32 @@ a[id$=HOU] {
     color: var(--hou-txt);
 }
 
-a[id$=LON] {
-    color: var(--lon-txt);
-}
-
-a[id$=LAG] {
-    color: var(--lag-txt);
+a[id$=LDN] {
+    color: var(--ldn-txt);
 }
 
 a[id$=VAL] {
     color: var(--val-txt);
 }
 
-a[id$=NXL] {
-    color: var(--nxl-txt);
+a[id$=NYE] {
+    color: var(--nye-txt);
 }
 
-a[id$=PAR] {
-    color: var(--par-txt);
+a[id$=LVE] {
+    color: var(--LVE-txt);
 }
 
-a[id$=PHI] {
-    color: var(--phi-txt);
+a[id$=INF] {
+    color: var(--INF-txt);
 }
 
 a[id$=SFS] {
     color: var(--sfs-txt);
 }
 
-a[id$=SEO] {
-    color: var(--seo-txt);
+a[id$=DYN] {
+    color: var(--dyn-txt);
 }
 
 a[id$=SHD] {
@@ -235,14 +235,14 @@ div[data-rank-id="Houston Outlaws"].rank-list-item.sortable-selected {
 
 div[data-rank-id="London Spitfire"].rank-list-item,
 div[data-rank-id="London Spitfire"].rank-list-item.sortable-selected {
-	color: var(--lon-txt);
-	background-color: var(--lon-bg);
+	color: var(--ldn-txt);
+	background-color: var(--ldn-bg);
 }
 
 div[data-rank-id="Los Angeles Gladiators"].rank-list-item,
 div[data-rank-id="Los Angeles Gladiators"].rank-list-item.sortable-selected {
-	color: var(--lag-txt);
-	background-color: var(--lag-bg);
+	color: var(--gla-txt);
+	background-color: var(--gla-bg);
 }
 
 div[data-rank-id="Los Angeles Valiant"].rank-list-item,
@@ -253,20 +253,20 @@ div[data-rank-id="Los Angeles Valiant"].rank-list-item.sortable-selected {
 
 div[data-rank-id="New York Excelsior"].rank-list-item,
 div[data-rank-id="New York Excelsior"].rank-list-item.sortable-selected {
-	color: var(--nxl-txt);
-	background-color: var(--nxl-bg);
+	color: var(--nye-txt);
+	background-color: var(--nye-bg);
 }
 
-div[data-rank-id="Paris Eternal"].rank-list-item,
-div[data-rank-id="Paris Eternal"].rank-list-item.sortable-selected {
-	color: var(--par-txt);
-	background-color: var(--par-bg);
+div[data-rank-id="Vegas Eternal"].rank-list-item,
+div[data-rank-id="Vegas Eternal"].rank-list-item.sortable-selected {
+	color: var(--lve-txt);
+	background-color: var(--lve-bg);
 }
 
-div[data-rank-id="Philadelphia Fusion"].rank-list-item,
-div[data-rank-id="Philadelphia Fusion"].rank-list-item.sortable-selected {
-	color: var(--phi-txt);
-	background-color: var(--phi-bg);
+div[data-rank-id="Seoul Infernal"].rank-list-item,
+div[data-rank-id="Seoul Infernal"].rank-list-item.sortable-selected {
+	color: var(--inf-txt);
+	background-color: var(--inf-bg);
 }
 
 div[data-rank-id="San Francisco Shock"].rank-list-item,
@@ -277,8 +277,8 @@ div[data-rank-id="San Francisco Shock"].rank-list-item.sortable-selected {
 
 div[data-rank-id="Seoul Dynasty"].rank-list-item,
 div[data-rank-id="Seoul Dynasty"].rank-list-item.sortable-selected {
-	color: var(--seo-txt);
-	background-color: var(--seo-bg);
+	color: var(--dyn-txt);
+	background-color: var(--dyn-bg);
 }
 
 div[data-rank-id="Shanghai Dragons"].rank-list-item,
